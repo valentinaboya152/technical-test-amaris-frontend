@@ -11,7 +11,7 @@ import RegisterPage from '@/pages/RegisterPage';
 import Home from '@/pages/Home'
 
 // Main Pages
-import Dashboard from '@/pages/Dashboard';
+import Dashboard from '@/pages/DashboardPage';
 
 /**
  * Componente para rutas protegidas que requieren autenticación

@@ -79,8 +79,8 @@ const Login = () => {
       setIsLoading(true);
       const response = await authService.login(formData.username, formData.password);
       
-      // Save tokens and update auth state
-      await loginUser(response.accessToken, response.refreshToken);
+      // Save tokens and update auth state - pass the entire response
+      await loginUser(response);
       
       // Redirect to dashboard
       navigate('/dashboard');

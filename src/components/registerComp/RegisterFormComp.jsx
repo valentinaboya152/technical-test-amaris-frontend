@@ -109,7 +109,7 @@ const RegisterFormComp = () => {
     e.preventDefault();
     setError('');
     
-    // Validaciones
+    // Client-side validations
     if (formData.password !== formData.confirmPassword) {
       setError('Las contraseñas no coinciden');
       return;
@@ -122,20 +122,40 @@ const RegisterFormComp = () => {
 
     try {
       setIsLoading(true);
-      // Eliminamos campos que no van al servidor
-      const { confirmPassword, acceptTerms, ...userData } = formData;
       
-      const response = await registerUserService.register(userData);
+      // Prepare the data in the exact format expected by the server
+      const userData = {
+        full_name: formData.full_name.trim(),
+        nit: formData.nit.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim(),
+        username: formData.username.trim(),
+        password: formData.password
+      };
       
-      // Redirigir a login después de registro exitoso
+      console.log('Sending registration data:', userData);
+      
+      await registerUserService.register(userData);
+      
+      // Redirect to login after successful registration
       navigate('/login', { 
         state: { 
-          message: '¡Registro exitoso! Por favor inicia sesión.' 
+          message: '¡Registro exitoso! Por favor inicia sesión.',
+          severity: 'success'
         } 
       });
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.message || 'Error al registrar el usuario. Intenta nuevamente.');
+      // If we have validation errors from the server, display them
+      if (err.response?.data?.errors) {
+        const errorMessages = Object.values(err.response.data.errors).flat();
+        setError(errorMessages.join('\n'));
+      } else if (err.response?.data?.message) {
+        // Handle other error messages from the server
+        setError(err.response.data.message);
+      } else {
+        setError(err.message || 'Error al registrar el usuario. Intenta nuevamente.');
+      }
     } finally {
       setIsLoading(false);
     }

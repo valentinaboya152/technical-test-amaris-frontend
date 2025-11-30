@@ -11,34 +11,64 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is logged in on initial load
   useEffect(() => {
-    const checkAuth = () => {
-      const accessToken = tokenService.getAccessToken();
-      if (accessToken) {
-        // Simulamos un usuario básico con el token
-        setUser({ email: 'usuario@ejemplo.com' });
-        setIsAuthenticated(true);
+    const checkAuth = async () => {
+      try {
+        const accessToken = tokenService.getAccessToken();
+        if (accessToken) {
+          // Try to get user data from the server or decode token
+          // For now, we'll just set a basic user object
+          setUser({ email: 'usuario@ejemplo.com' });
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        // Clear invalid tokens
+        tokenService.clearTokens();
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     checkAuth();
   }, []);
 
-  const loginUser = async (accessToken, refreshToken) => {
+  const loginUser = async (responseData) => {
     try {
+      // Extract tokens from response data
+      const accessToken = responseData.access_token || responseData.accessToken;
+      const refreshToken = responseData.refresh_token || responseData.refreshToken;
+      
+      if (!accessToken) {
+        throw new Error('No access token received');
+      }
+      
       // Save tokens
       tokenService.setAccessToken(accessToken);
-      tokenService.setRefreshToken(refreshToken);
+      if (refreshToken) {
+        tokenService.setRefreshToken(refreshToken);
+      }
       
-      // Simulamos un usuario básico
-      setUser({ email: 'usuario@ejemplo.com' });
+      // Try to extract user info from the token
+      try {
+        const tokenData = JSON.parse(atob(accessToken.split('.')[1]));
+        setUser({ 
+          email: tokenData.email || tokenData.sub || 'usuario@ejemplo.com',
+          ...tokenData
+        });
+      } catch (e) {
+        console.warn('Could not parse token, using default user');
+        setUser({ email: 'usuario@ejemplo.com' });
+      }
+      
       setIsAuthenticated(true);
       setError(null);
       
       return true;
     } catch (error) {
       console.error('Login failed:', error);
-      setError(error.message);
+      setError(error.message || 'Error during login');
       logoutUser();
       throw error;
     }

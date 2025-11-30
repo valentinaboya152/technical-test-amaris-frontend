@@ -18,8 +18,13 @@ export const authService = {
         password
       });
       
-      console.log('Login response:', response.data); // Para depuración
-      // Asumimos que el backend responde con { accessToken, refreshToken }
+      console.log('Login response:', response.data);
+      
+      // Ensure we have the expected response format
+      if (!response.data || (!response.data.access_token && !response.data.accessToken)) {
+        throw new Error('Invalid response format from server');
+      }
+      
       return response.data;
     } catch (error) {
       // Manejo detallado de errores específicos de la API
