@@ -16,7 +16,7 @@ import {
 import fundService from '../../services/fundService';
 import subscriptionService from '../../services/subscriptionService';
 
-const SubscriptionForm = ({ onSubscriptionCreated, onError }) => {
+const SubscriptionForm = ({ onSubscriptionCreated, onError, currentBalance }) => {
   const [funds, setFunds] = useState([]);
   const [selectedFund, setSelectedFund] = useState('');
   const [notificationPreference, setNotificationPreference] = useState('EMAIL');
@@ -118,6 +118,12 @@ const SubscriptionForm = ({ onSubscriptionCreated, onError }) => {
     );
   }
 
+    const validateAmount = (amount) => {
+    if (amount > currentBalance) {
+      return 'El monto no puede ser mayor a tu saldo disponible';
+      }
+      return true;
+    };
   return (
     <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>

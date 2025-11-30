@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { AccountCircle } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import clientService from '../../services/clientService';
+
 
 const AppBar = ({ user, onLogout }) => {
   const [anchorEl, setAnchorEl] = useState(null);

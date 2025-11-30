@@ -1,66 +1,56 @@
+// En src/pages/DashboardPage.jsx
 import React, { useState, useEffect } from 'react';
-import { Container, Box, Grid, Typography, Alert, CircularProgress } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { 
+  Container, 
+  Box, 
+  Typography, 
+  Alert, 
+  CircularProgress,
+  Paper,
+  Divider
+} from '@mui/material';
 import { useAuth } from '@/context/AuthContext';
+import { clientService } from '@/services/clientServices/clientService';
 import SubscriptionForm from '../components/dashboard/SubscriptionForm';
 import SubscriptionsList from '../components/dashboard/SubscriptionsList';
-import AppBar from '../components/layout/AppBar';
-import ClientInfoCard from '../components/layout/ClientInfoCard';
-import clientService from '../services/clientService';
 
 const DashboardPage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [clientData, setClientData] = useState(null);
+  const [clientInfo, setClientInfo] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const { isAuthenticated, isLoading: authLoading, user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  const fetchClientData = async () => {
+  // Función para cargar la información del cliente
+  const fetchClientInfo = async () => {
     try {
       const data = await clientService.getClientInfo();
-      setClientData(data);
-    } catch (error) {
-      console.error('Error fetching client data:', error);
-      setError('No se pudo cargar la información del cliente');
+      setClientInfo(data);
+    } catch (err) {
+      console.error('Error al cargar información del cliente:', err);
+      setError('No se pudo cargar la información del saldo');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    // Only check authentication if not already loading
-    if (!authLoading) {
-      // If not authenticated, redirect to login
-      if (!isAuthenticated) {
-        navigate('/login', { 
-          state: { 
-            message: 'Por favor inicia sesión para acceder al panel',
-            severity: 'warning'
-          },
-          replace: true
-        });
-      } else {
-        // If authenticated, fetch client data
-        fetchClientData();
-      }
+    if (isAuthenticated && !authLoading) {
+      fetchClientInfo();
     }
-  }, [isAuthenticated, authLoading, navigate, refreshKey]);
+  }, [isAuthenticated, authLoading]);
 
   const handleSubscriptionCreated = () => {
-    // This will trigger a refresh of the subscriptions list
-    window.scrollTo(0, 0);
-    setError('');
-    setRefreshKey(prevKey => prevKey + 1);
+    // Refrescar la información del cliente después de una nueva suscripción
+    fetchClientInfo();
+    setRefreshKey(prev => prev + 1);
   };
 
-  const handleError = (errorMessage) => {
-    setError(errorMessage);
-    window.scrollTo(0, 0);
+  const handleError = (errorMsg) => {
+    setError(errorMsg);
   };
 
-  // Show loading state while checking authentication or loading data
-  if (authLoading || isLoading) {
+  if (authLoading || (!isAuthenticated && !authLoading) || isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
@@ -68,39 +58,65 @@ const DashboardPage = () => {
     );
   }
 
+  // Función para formatear el saldo como moneda
+  const formatCurrency = (amount, currency = 'COP') => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBar user={clientData} onLogout={logout} />
-      
-      <Container maxWidth="xl" sx={{ mt: 3, mb: 4, flex: 1 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-            {error}
-          </Alert>
-        )}
-        
-        <Grid container spacing={3}>
-          {/* Left Column - Client Info */}
-          <Grid item xs={12} md={4} lg={3}>
-            <ClientInfoCard client={clientData} />
-          </Grid>
-          
-          {/* Right Column - Subscription Form and List */}
-          <Grid item xs={12} md={8} lg={9}>
-            <Box sx={{ mb: 3 }}>
-              <SubscriptionForm 
-                onSubscriptionCreated={handleSubscriptionCreated} 
-                onError={handleError} 
-              />
-            </Box>
-            
-            <Box>
-              <SubscriptionsList key={refreshKey} />
-            </Box>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Tarjeta de saldo */}
+      {clientInfo && (
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 3, 
+            mb: 4,
+            background: 'linear-gradient(45deg, #1976d2 30%, #21CBF3 90%)',
+            color: 'white'
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Saldo disponible
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h4" component="div">
+              {formatCurrency(clientInfo.amount, clientInfo.currency)}
+            </Typography>
+          </Box>
+          <Typography variant="caption" display="block" sx={{ mt: 1, opacity: 0.9 }}>
+            Última actualización: {new Date(clientInfo.updated_at).toLocaleString()}
+          </Typography>
+        </Paper>
+      )}
+
+      {error && (
+        <Alert 
+          severity="error" 
+          sx={{ mb: 3 }} 
+          onClose={() => setError('')}
+        >
+          {error}
+        </Alert>
+      )}
+
+      <Box sx={{ mb: 4 }}>
+        <SubscriptionForm 
+          onSubscriptionCreated={handleSubscriptionCreated}
+          onError={handleError}
+          currentBalance={clientInfo?.amount || 0}
+        />
+      </Box>
+
+      <Box>
+        <SubscriptionsList key={refreshKey} />
+      </Box>
+    </Container>
   );
 };
 
