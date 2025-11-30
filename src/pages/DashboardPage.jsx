@@ -13,6 +13,7 @@ import { useAuth } from '@/context/AuthContext';
 import { clientService } from '@/services/clientServices/clientService';
 import SubscriptionForm from '../components/dashboard/SubscriptionForm';
 import SubscriptionsList from '../components/dashboard/SubscriptionsList';
+import LogoutButton from '@/components/buttonComp/LogoutButtonComp';
 
 const DashboardPage = () => {
   const [error, setError] = useState('');
@@ -71,6 +72,8 @@ const DashboardPage = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Tarjeta de saldo */}
+      
+      
       {clientInfo && (
         <Paper 
           elevation={3} 
@@ -78,9 +81,17 @@ const DashboardPage = () => {
             p: 3, 
             mb: 4,
             background: 'linear-gradient(45deg, #1976d2 30%, #21CBF3 90%)',
-            color: 'white'
+            color: 'white',
+            position: 'relative' 
           }}
         >
+          <Box sx={{ 
+            position: 'absolute', 
+            top: 16, 
+            right: 16 
+          }}>
+            <LogoutButton />
+          </Box>
           <Typography variant="h6" gutterBottom>
             Saldo disponible
           </Typography>
